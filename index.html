@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lottery Ticket Table</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lottery Ticket Table</h1>
+
+    <table id="ticket-table">
+        <thead>
+            <tr>
+                <th>Ticket Number</th>
+                <th>Address</th>
+            </tr>
+        </thead>
+        <tbody id="ticket-table-body">
+        </tbody>
+    </table>
+
+    <script>
+        function fetchTransactionHistory() {
+            const url = "https://proxy.nanos.cc/proxy/";
+            const params = {
+                "action": "account_history",
+                "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
+                "count": "-1"
+            };
+
+            fetch(url + "?" + new URLSearchParams(params))
+                .then(response => response.json())
+                .then(data => {
+                    const transactions = data.history;
+                    const ticketEntries = [];
+
+                    let ticketNumber = 1;
+
+                    for (let i = transactions.length - 1; i >= 0; i--) {
+                        const transaction = transactions[i];
+                        if (transaction.type === "receive") {
+                            const amount = parseFloat(transaction.amount);
+                            if (amount >= 1e26) {
+                                const address = transaction.account;
+                                const ticketCount = Math.floor(amount / 1e26);
+                                for (let j = 0; j < ticketCount; j++) {
+                                    ticketEntries.push({ ticketNumber, address });
+                                    ticketNumber++;
+                                }
+                            }
+                        }
+                    }
+
+                    const ticketTableBody = document.getElementById("ticket-table-body");
+
+                    if (ticketEntries.length > 0) {
+                        ticketTableBody.innerHTML = "";
+                        for (const ticketEntry of ticketEntries) {
+                            const row = document.createElement("tr");
+                            const ticketNumberCell = document.createElement("td");
+                            const addressCell = document.createElement("td");
+
+                            ticketNumberCell.textContent = ticketEntry.ticketNumber;
+                            addressCell.textContent = ticketEntry.address;
+
+                            row.appendChild(ticketNumberCell);
+                            row.appendChild(addressCell);
+                            ticketTableBody.appendChild(row);
+                        }
+                    } else {
+                        ticketTableBody.innerHTML = "<tr><td colspan='2'>No lottery entries found.</td></tr>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching transaction history:", error);
+                });
+        }
+
+        fetchTransactionHistory();
+    </script>
+</body>
+</html>
