@@ -3,6 +3,64 @@
 <head>
     <title>Lottery Ticket Table</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .lottery-address {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .lottery-address-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .lottery-address-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .lottery-address-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lottery-address-buttons button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .lottery-address-buttons button:hover {
+            background-color: #0056b3;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -17,10 +75,16 @@
         th {
             background-color: #f2f2f2;
         }
+
+        .no-entries-row {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
     </style>
     <script>
         function copyToClipboard() {
-            const lotteryAddress = document.getElementById("lottery-address");
+            const lotteryAddress = document.getElementById("lottery-address-input");
             lotteryAddress.select();
             lotteryAddress.setSelectionRange(0, 99999); /* For mobile devices */
 
@@ -29,7 +93,7 @@
         }
 
         function openNanoWallet() {
-            const lotteryAddress = document.getElementById("lottery-address").value;
+            const lotteryAddress = document.getElementById("lottery-address-input").value;
             const walletURL = "nano:" + lotteryAddress;
 
             window.open(walletURL);
@@ -55,7 +119,7 @@
                         const transaction = transactions[i];
                         if (transaction.type === "receive") {
                             const amount = parseFloat(transaction.amount);
-                            if (amount >= 1e26) {
+                                                        if (amount >= 1e26) {
                                 const address = transaction.account;
                                 const ticketCount = Math.floor(amount / 1e26);
                                 for (let j = 0; j < ticketCount; j++) {
@@ -83,7 +147,13 @@
                             ticketTableBody.appendChild(row);
                         }
                     } else {
-                        ticketTableBody.innerHTML = "<tr><td colspan='2'>No lottery entries found.</td></tr>";
+                        const noEntriesRow = document.createElement("tr");
+                        const noEntriesCell = document.createElement("td");
+                        noEntriesCell.setAttribute("colspan", "2");
+                        noEntriesCell.textContent = "No lottery entries found.";
+
+                        noEntriesRow.appendChild(noEntriesCell);
+                        ticketTableBody.appendChild(noEntriesRow);
                     }
                 })
                 .catch(error => {
@@ -95,28 +165,28 @@
     </script>
 </head>
 <body>
-    <h1>Lottery Ticket Table</h1>
+    <div class="container">
+        <h1>Lottery Ticket Table</h1>
 
-    <div>
-        <label for="lottery-address">Lottery Address:</label>
-        <input type="text" id="lottery-address" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-        <button onclick="copyToClipboard()">Copy</button>
-        <button onclick="openNanoWallet()">Open Wallet</button>
+        <div class="lottery-address">
+            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
+            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+            <div class="lottery-address-buttons">
+                <button onclick="copyToClipboard()">Copy</button>
+                <button onclick="openNanoWallet()">Open Wallet</button>
+            </div>
+        </div>
+
+        <table id="ticket-table">
+            <thead>
+                <tr>
+                    <th>Ticket Number</th>
+                    <th>Address</th>
+                </tr>
+            </thead>
+            <tbody id="ticket-table-body">
+            </tbody>
+        </table>
     </div>
-
-    <table id="ticket-table">
-        <thead>
-            <tr>
-                <th>Ticket Number</th>
-                <th>Address</th>
-            </tr>
-        </thead>
-        <tbody id="ticket-table-body">
-        </tbody>
-    </table>
-
-    <script>
-        // Remaining JavaScript code for the fetchTransactionHistory() function and event listeners goes here...
-    </script>
 </body>
 </html>
