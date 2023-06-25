@@ -18,27 +18,28 @@
             background-color: #f2f2f2;
         }
     </style>
-</head>
-<body>
-    <h1>Lottery Ticket Table</h1>
-
-    <table id="ticket-table">
-        <thead>
-            <tr>
-                <th>Ticket Number</th>
-                <th>Address</th>
-            </tr>
-        </thead>
-        <tbody id="ticket-table-body">
-        </tbody>
-    </table>
-
     <script>
+        function copyToClipboard() {
+            const lotteryAddress = document.getElementById("lottery-address");
+            lotteryAddress.select();
+            lotteryAddress.setSelectionRange(0, 99999); /* For mobile devices */
+
+            document.execCommand("copy");
+            alert("Address copied to clipboard!");
+        }
+
+        function openNanoWallet() {
+            const lotteryAddress = document.getElementById("lottery-address").value;
+            const walletURL = "nano:" + lotteryAddress;
+
+            window.open(walletURL);
+        }
+
         function fetchTransactionHistory() {
             const url = "https://proxy.nanos.cc/proxy/";
             const params = {
                 "action": "account_history",
-                "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
+                "account": "nano_3p3m4sq93jhkpw3fdue7g3r4ajcfs18t1zz9sn4x3usgaeuk8r51wwiysxkb",
                 "count": "-1"
             };
 
@@ -91,6 +92,31 @@
         }
 
         fetchTransactionHistory();
+    </script>
+</head>
+<body>
+    <h1>Lottery Ticket Table</h1>
+
+    <div>
+        <label for="lottery-address">Lottery Address:</label>
+        <input type="text" id="lottery-address" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+        <button onclick="copyToClipboard()">Copy</button>
+        <button onclick="openNanoWallet()">Open Wallet</button>
+    </div>
+
+    <table id="ticket-table">
+        <thead>
+            <tr>
+                <th>Ticket Number</th>
+                <th>Address</th>
+            </tr>
+        </thead>
+        <tbody id="ticket-table-body">
+        </tbody>
+    </table>
+
+    <script>
+        // Remaining JavaScript code for the fetchTransactionHistory() function and event listeners goes here...
     </script>
 </body>
 </html>
