@@ -61,6 +61,11 @@
             background-color: #0056b3;
         }
 
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -113,13 +118,13 @@
                     const transactions = data.history;
                     const ticketEntries = [];
 
-                    let ticketNumber = 1;
+                                        let ticketNumber = 1;
 
                     for (let i = transactions.length - 1; i >= 0; i--) {
                         const transaction = transactions[i];
                         if (transaction.type === "receive") {
                             const amount = parseFloat(transaction.amount);
-                                                        if (amount >= 1e26) {
+                            if (amount >= 1e26) {
                                 const address = transaction.account;
                                 const ticketCount = Math.floor(amount / 1e26);
                                 for (let j = 0; j < ticketCount; j++) {
@@ -177,16 +182,18 @@
             </div>
         </div>
 
-        <table id="ticket-table">
-            <thead>
-                <tr>
-                    <th>Ticket Number</th>
-                    <th>Address</th>
-                </tr>
-            </thead>
-            <tbody id="ticket-table-body">
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table id="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Number</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody id="ticket-table-body">
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
