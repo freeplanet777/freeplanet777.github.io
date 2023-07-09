@@ -41,6 +41,7 @@
             padding: 8px;
             border: none;
             border-radius: 5px;
+            font-size: 16px;
         }
 
         .lottery-address-buttons {
@@ -55,6 +56,7 @@
             background-color: #007bff;
             color: #fff;
             cursor: pointer;
+            font-size: 16px;
         }
 
         .lottery-address-buttons button:hover {
@@ -62,7 +64,7 @@
         }
 
         .table-container {
-            max-height: 400px;
+            max-height: 100%;
             overflow-y: auto;
         }
 
@@ -75,6 +77,7 @@
             padding: 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            font-size: 16px;
         }
 
         th {
@@ -85,6 +88,25 @@
             text-align: center;
             font-style: italic;
             color: #777;
+        }
+
+        @media screen and (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .lottery-address-label,
+            .lottery-address-input,
+            .lottery-address-buttons button,
+            th,
+            td {
+                font-size: 14px;
+                padding: 6px;
+            }
+
+            .lottery-address-input {
+                font-size: 14px;
+            }
         }
     </style>
     <script>
@@ -163,68 +185,67 @@
                     console.error("Error fetching transaction history:", error);
                 });
         }
-function loadNatriconImage(address, ticketNumber, row) {
-    const url = `https://natricon.com/api/v1/nano?address=${address}`;
 
-    fetch(url)
-        .then(response => response.text())
-        .then(svgData => {
-            const parser = new DOMParser();
-            const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
-            svgElement.setAttribute("width", "40");
-            svgElement.setAttribute("height", "40");
+        function loadNatriconImage(address, ticketNumber, row) {
+            const url = `https://natricon.com/api/v1/nano?address=${address}`;
 
-            const imageWrapper = document.createElement("div");
-            imageWrapper.appendChild(svgElement);
+            fetch(url)
+                .then(response => response.text())
+                .then(svgData => {
+                    const parser = new DOMParser();
+                    const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+                    svgElement.setAttribute("width", "40");
+                    svgElement.setAttribute("height", "40");
 
-            imageWrapper.addEventListener("click", function () {
-                openNanoWallet(address);
+                    const imageWrapper = document.createElement("div");
+                    imageWrapper.appendChild(svgElement);
+
+                    imageWrapper.addEventListener("click", function () {
+                        openNanoWallet(address);
+                    });
+
+                    const addressCell = row.querySelector(".address-cell");
+                    addressCell.textContent = "";
+                    addressCell.appendChild(imageWrapper);
+
+                    const shortAddress = address.slice(-6);
+                    const shortAddressSpan = document.createElement("span");
+                    shortAddressSpan.classList.add("short-address");
+                    shortAddressSpan.textContent = shortAddress;
+                addressCell.appendChild(shortAddressSpan);
+            })
+            .catch(error => {
+                console.error("Error loading Natricon image:", error);
             });
+    }
 
-            const addressCell = row.querySelector(".address-cell");
-            addressCell.textContent = "";
-            addressCell.appendChild(imageWrapper);
-
-            const shortAddress = address.slice(-6); // Получение последних шести символов адреса
-            const shortAddressSpan = document.createElement("span");
-            shortAddressSpan.classList.add("short-address");
-            shortAddressSpan.textContent = shortAddress;
-            addressCell.appendChild(shortAddressSpan);
-        })
-        .catch(error => {
-            console.error("Error loading Natricon image:", error);
-        });
-}
-
-
-        fetchTransactionHistory();
-    </script>
+    fetchTransactionHistory();
+</script>
 </head>
 <body>
     <div class="container">
         <h1>Lottery Ticket Table</h1>
-
-        <div class="lottery-address">
-            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
-            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-            <div class="lottery-address-buttons">
-                <button onclick="copyToClipboard()">Copy</button>
-                <button onclick="openNanoWallet()">Open Wallet</button>
-            </div>
-        </div>
-
-        <div class="table-container">
-            <table id="ticket-table">
-                <thead>
-                    <tr>
-                        <th>Ticket Number</th>
-                        <th>Address</th>
-                    </tr>
-                </thead>
-                <tbody id="ticket-table-body">
-                </tbody>
-            </table>
+            <div class="lottery-address">
+        <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
+        <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+        <div class="lottery-address-buttons">
+            <button onclick="copyToClipboard()">Copy</button>
+            <button onclick="openNanoWallet()">Open Wallet</button>
         </div>
     </div>
+
+    <div class="table-container">
+        <table id="ticket-table">
+            <thead>
+                <tr>
+                    <th>Ticket Number</th>
+                    <th>Address</th>
+                </tr>
+            </thead>
+            <tbody id="ticket-table-body">
+            </tbody>
+        </table>
+    </div>
+</div>
 </body>
 </html>
