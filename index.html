@@ -163,33 +163,39 @@
                     console.error("Error fetching transaction history:", error);
                 });
         }
+function loadNatriconImage(address, ticketNumber, row) {
+    const url = `https://natricon.com/api/v1/nano?address=${address}`;
 
-        function loadNatriconImage(address, ticketNumber, row) {
-            const url = `https://natricon.com/api/v1/nano?address=${address}`;
+    fetch(url)
+        .then(response => response.text())
+        .then(svgData => {
+            const parser = new DOMParser();
+            const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+            svgElement.setAttribute("width", "40");
+            svgElement.setAttribute("height", "40");
 
-            fetch(url)
-                .then(response => response.text())
-                .then(svgData => {
-                    const parser = new DOMParser();
-                    const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
-                    svgElement.setAttribute("width", "40");
-                    svgElement.setAttribute("height", "40");
+            const imageWrapper = document.createElement("div");
+            imageWrapper.appendChild(svgElement);
 
-                    const imageWrapper = document.createElement("div");
-                    imageWrapper.appendChild(svgElement);
+            imageWrapper.addEventListener("click", function () {
+                openNanoWallet(address);
+            });
 
-                    imageWrapper.addEventListener("click", function () {
-                        openNanoWallet(address);
-                    });
+            const addressCell = row.querySelector(".address-cell");
+            addressCell.textContent = "";
+            addressCell.appendChild(imageWrapper);
 
-                    const addressCell = row.querySelector(".address-cell");
-                    addressCell.textContent = "";
-                    addressCell.appendChild(imageWrapper);
-                })
-                .catch(error => {
-                    console.error("Error loading Natricon image:", error);
-                });
-        }
+            const shortAddress = address.slice(-6); // Получение последних шести символов адреса
+            const shortAddressSpan = document.createElement("span");
+            shortAddressSpan.classList.add("short-address");
+            shortAddressSpan.textContent = shortAddress;
+            addressCell.appendChild(shortAddressSpan);
+        })
+        .catch(error => {
+            console.error("Error loading Natricon image:", error);
+        });
+}
+
 
         fetchTransactionHistory();
     </script>
