@@ -91,16 +91,13 @@
         function copyToClipboard() {
             const lotteryAddress = document.getElementById("lottery-address-input");
             lotteryAddress.select();
-            lotteryAddress.setSelectionRange(0, 99999); /* For mobile devices */
-
+            lotteryAddress.setSelectionRange(0, 99999);
             document.execCommand("copy");
             alert("Address copied to clipboard!");
         }
 
-        function openNanoWallet() {
-            const lotteryAddress = document.getElementById("lottery-address-input").value;
-            const walletURL = "nano:" + lotteryAddress;
-
+        function openNanoWallet(address) {
+            const walletURL = "nano:" + address;
             window.open(walletURL);
         }
 
@@ -117,8 +114,7 @@
                 .then(data => {
                     const transactions = data.history;
                     const ticketEntries = [];
-
-                                        let ticketNumber = 1;
+                    let ticketNumber = 1;
 
                     for (let i = transactions.length - 1; i >= 0; i--) {
                         const transaction = transactions[i];
@@ -143,13 +139,15 @@
                             const row = document.createElement("tr");
                             const ticketNumberCell = document.createElement("td");
                             const addressCell = document.createElement("td");
+                            addressCell.classList.add("address-cell");
 
                             ticketNumberCell.textContent = ticketEntry.ticketNumber;
-                            addressCell.textContent = ticketEntry.address;
 
                             row.appendChild(ticketNumberCell);
                             row.appendChild(addressCell);
                             ticketTableBody.appendChild(row);
+
+                            loadNatriconImage(ticketEntry.address, ticketEntry.ticketNumber, row);
                         }
                     } else {
                         const noEntriesRow = document.createElement("tr");
@@ -163,6 +161,33 @@
                 })
                 .catch(error => {
                     console.error("Error fetching transaction history:", error);
+                });
+        }
+
+        function loadNatriconImage(address, ticketNumber, row) {
+            const url = `https://natricon.com/api/v1/nano?address=${address}`;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(svgData => {
+                    const parser = new DOMParser();
+                    const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+                    svgElement.setAttribute("width", "40");
+                    svgElement.setAttribute("height", "40");
+
+                    const imageWrapper = document.createElement("div");
+                    imageWrapper.appendChild(svgElement);
+
+                    imageWrapper.addEventListener("click", function () {
+                        openNanoWallet(address);
+                    });
+
+                    const addressCell = row.querySelector(".address-cell");
+                    addressCell.textContent = "";
+                    addressCell.appendChild(imageWrapper);
+                })
+                .catch(error => {
+                    console.error("Error loading Natricon image:", error);
                 });
         }
 
