@@ -16,7 +16,7 @@
     }
 
     .container {
-        max-width: 800px;
+        max-width: 100%;
         margin: 0 auto;
         background-color: #fff;
         padding: 20px;
@@ -33,27 +33,31 @@
     .lottery-address-label {
         font-weight: bold;
         margin-right: 10px;
+        font-size: 24px;
     }
 
     .lottery-address-input {
         flex-grow: 1;
-        padding: 8px;
+        padding: 12px;
         border: none;
         border-radius: 5px;
+        font-size: 24px;
     }
 
     .lottery-address-buttons {
         display: flex;
         gap: 10px;
+        margin-top: 20px;
     }
 
     .lottery-address-buttons button {
-        padding: 8px 12px;
+        padding: 12px 16px;
         border: none;
         border-radius: 5px;
         background-color: #007bff;
         color: #fff;
         cursor: pointer;
+        font-size: 20px;
     }
 
     .lottery-address-buttons button:hover {
@@ -61,7 +65,7 @@
     }
 
     .table-container {
-        max-height: 400px;
+        max-height: 100%;
         overflow-y: auto;
     }
 
@@ -71,9 +75,10 @@
     }
 
     th, td {
-        padding: 12px;
+        padding: 16px;
         text-align: left;
         border-bottom: 1px solid #ddd;
+        font-size: 20px;
     }
 
     th {
@@ -87,7 +92,7 @@
     }
 
     .ticket-number {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: bold;
     }
 
@@ -97,25 +102,26 @@
     }
 
     .address-cell img {
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         margin-right: 10px;
         cursor: pointer;
     }
 
     .address-cell .short-address {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: bold;
     }
 
     .rules-button {
-        padding: 10px 16px;
+        padding: 16px 20px;
         border: none;
         border-radius: 5px;
         background-color: #007bff;
         color: #fff;
         cursor: pointer;
-        margin-bottom: 20px;
+        font-size: 20px;
+        margin-top: 20px;
     }
 
     .rules-button:hover {
@@ -138,6 +144,12 @@
         transition: visibility 0s linear 0.25s, opacity 0.25s;
     }
 
+    .rules-modal.open {
+        visibility: visible;
+        opacity: 1;
+        transition-delay: 0s;
+    }
+
     .rules-modal-content {
         max-width: 600px;
         background-color: #fff;
@@ -147,12 +159,6 @@
         position: relative;
         opacity: 0;
         transition: opacity 0.25s;
-    }
-
-    .rules-modal.open {
-        visibility: visible;
-        opacity: 1;
-        transition-delay: 0s;
     }
 
     .rules-modal.open .rules-modal-content {
@@ -198,7 +204,7 @@
 
     function openNanoWallet() {
         const address = document.getElementById("lottery-address-input").value;
-        const walletURL = "nano:" + address;
+        const walletURL = "https://nanolooker.com/address/" + address;
         window.open(walletURL);
     }
 
@@ -255,7 +261,7 @@
                     const noEntriesRow = document.createElement("tr");
                     const noEntriesCell = document.createElement("td");
                     noEntriesCell.setAttribute("colspan", "2");
-                    noEntriesCell.textContent= "No lottery entries found.";
+                    noEntriesCell.textContent = "No lottery entries found.";
 
                     noEntriesRow.appendChild(noEntriesCell);
                     ticketTableBody.appendChild(noEntriesRow);
@@ -318,10 +324,12 @@
             <div class="lottery-address">
         <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
         <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-        <div class="lottery-address-buttons">
-            <button onclick="copyToClipboard()">Copy</button>
-            <button onclick="openNanoWallet()">Open Wallet</button>
-        </div>
+    </div>
+
+    <div class="lottery-address-buttons">
+        <button onclick="copyToClipboard()">Copy</button>
+        <button onclick="openNanoWallet()">Open Wallet</button>
+        <button class="rules-button" onclick="openRulesModal()">Rules</button>
     </div>
 
     <div class="table-container">
@@ -336,22 +344,20 @@
             </tbody>
         </table>
     </div>
+</div>
 
-    <button class="rules-button" onclick="openRulesModal()">Rules</button>
-
-    <div id="rules-modal" class="rules-modal">
-        <div class="rules-modal-content">
-            <div class="rules-modal-header">
-                <h2 class="rules-modal-title">Lottery Rules</h2>
-                <span class="rules-modal-close" onclick="closeRulesModal()">&times;</span>
-            </div>
-            <div class="rules-modal-body">
-                <p>1. Purchase a lottery ticket by sending at least 1 Nano to the provided lottery address.</p>
-                <p>2. The ticket number will be assigned based on the amount of Nano sent.</p>
-                <p>3. For every 1e26 (10^26) Nano sent, one ticket will be allocated.</p>
-                <p>4. The lottery drawing will be held on the specified date and winners will be selected randomly.</p>
-                <p>5. Winners will receive their prizes directly to their Nano addresses.</p>
-            </div>
+<div id="rules-modal" class="rules-modal">
+    <div class="rules-modal-content">
+        <div class="rules-modal-header">
+            <h2 class="rules-modal-title">Lottery Rules</h2>
+            <span class="rules-modal-close" onclick="closeRulesModal()">&times;</span>
+        </div>
+        <div class="rules-modal-body">
+            <p>1. Purchase a lottery ticket by sending at least 1 Nano to the provided lottery address.</p>
+            <p>2. The ticket number will be assigned based on the amount of Nano sent.</p>
+            <p>3. For every 1e26 (10^26) Nano sent, one ticket will be allocated.</p>
+            <p>4. The lottery drawing will be held on the specified date and winners will be selected randomly.</p>
+            <p>5. Winners will receive their prizes directly to their Nano addresses.</p>
         </div>
     </div>
 </div>
