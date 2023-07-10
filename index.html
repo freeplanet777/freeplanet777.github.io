@@ -1,384 +1,107 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lottery Ticket Table</title>
+    <title>Transactions</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-        }
-
-        .lottery-address {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .lottery-address-label {
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .lottery-address-input {
-            flex-grow: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 5px;
-        }
-
-        .lottery-address-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .lottery-address-buttons button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        .lottery-address-buttons button:hover {
-            background-color: #0056b3;
-        }
-
-        .table-container {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .no-entries-row {
-            text-align: center;
-            font-style: italic;
-            color: #777;
-        }
-
-        .address-cell {
-            display: flex;
-            align-items: center;
-        }
-
-        .address-cell img {
-            width: 80px;
-            height: 80px;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        #overlay-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            position: relative;
-            max-width: 600px;
-        }
-
-        #overlay-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-        }
-
-        #transactionsCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-        }
-
-        #stats {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 18px;
-            color: #555;
-        }
-
-        .rules-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 9999;
-        }
-
-        .rules-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .rules-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            max-width: 600px;
-            position: relative;
-        }
-
-        .rules-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
+        canvas {
+            border: 1px solid #ccc;
         }
     </style>
-    <script>
-        // Function to copy the lottery address to the clipboard
-        function copyToClipboard() {
-            const lotteryAddress = document.getElementById("lottery-address-input");
-            lotteryAddress.select();
-            lotteryAddress.setSelectionRange(0, 99999);
-            document.execCommand("copy");
-            alert("Address copied to clipboard!");
-        }
-
-        // Function to open the Nano wallet with the lottery address
-        function openNanoWallet() {
-            const lotteryAddress = document.getElementById("lottery-address-input").value;
-            const walletURL = "nano:" + lotteryAddress;
-            window.open(walletURL);
-        }
-
-        // Function to fetch the transaction history and display the ticket table
-        function fetchTransactionHistory() {
-            const url = "https://proxy.nanos.cc/proxy/";
-            const params = {
-                "action": "account_history",
-                "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
-                "count": "-1"
-            };
-
-            fetch(url + "?" + new URLSearchParams(params))
-                .then(response => response.json())
-                .then(data => {
-                    const transactions = data.history;
-                    const ticketEntries = {};
-                    let ticketNumber = 1;
-                    let totalParticipants = 0;
-                    let totalAmount = 0;
-
-                    transactions.forEach(transaction => {
-                        if (transaction.type === "receive") {
-                            const amount = parseFloat(transaction.amount);
-                          
-
-                           if (amount >= 1e26) {
-                                const address = transaction.account;
-                                if (!ticketEntries[address]) {
-                                    ticketEntries[address] = [];
-                                }
-                                const ticketCount = Math.floor(amount / 1e26);
-                                for (let i = 0; i < ticketCount; i++) {
-                                    ticketEntries[address].push(ticketNumber);
-                                    ticketNumber++;
-                                }
-                                totalParticipants++;
-                                totalAmount += amount;
-                            }
-                        }
-                    });
-
-                    const ticketTableBody = document.getElementById("ticket-table-body");
-
-                    if (Object.keys(ticketEntries).length > 0) {
-                        ticketTableBody.innerHTML = "";
-                        for (const address in ticketEntries) {
-                            const row = document.createElement("tr");
-                            const ticketNumberCell = document.createElement("td");
-                            const addressCell = document.createElement("td");
-                            addressCell.classList.add("address-cell");
-
-                            ticketNumberCell.textContent = ticketEntries[address].join(", ");
-                            row.appendChild(ticketNumberCell);
-                            row.appendChild(addressCell);
-                            ticketTableBody.appendChild(row);
-
-                            const image = createImageElement(address);
-                            addressCell.appendChild(image);
-                        }
-                    } else {
-                        const noEntriesRow = document.createElement("tr");
-                        const noEntriesCell = document.createElement("td");
-                        noEntriesCell.setAttribute("colspan", "2");
-                        noEntriesCell.textContent = "No lottery entries found.";
-
-                        noEntriesRow.appendChild(noEntriesCell);
-                        ticketTableBody.appendChild(noEntriesRow);
-                    }
-
-                    updateStats(totalParticipants, totalAmount);
-                })
-                .catch(error => {
-                    console.error("Error fetching transaction history:", error);
-                });
-        }
-
-        // Function to create an image element for the Natricon
-        function createImageElement(address) {
-            const img = document.createElement("img");
-            const natriconUrl = `https://natricon.com/api/v1/nano?address=${address}`;
-            img.src = natriconUrl;
-            img.width = "80";
-            img.height = "80";
-            img.onclick = function() {
-                openOverlay(address);
-            };
-            return img;
-        }
-
-        // Function to open the overlay with the full address
-        function openOverlay(address) {
-            const overlay = document.getElementById("overlay");
-            const overlayContent = document.getElementById("overlay-content");
-            overlay.style.display = "flex";
-
-            const overlayClose = document.getElementById("overlay-close");
-            overlayClose.onclick = function() {
-                closeOverlay();
-            };
-
-            const addressLink = document.createElement("a");
-            addressLink.href = `https://www.nanolooker.com/account/${address}`;
-            addressLink.target = "_blank";
-            addressLink.textContent = address;
-
-            overlayContent.innerHTML = '';
-            overlayContent.appendChild(addressLink);
-        }
-
-        // Function to close the overlay
-        function closeOverlay() {
-            const overlay = document.getElementById("overlay");
-            overlay.style.display = "none";
-        }
-
-        // Function to update statistics
-        function updateStats(totalParticipants, totalAmount) {
-            const stats = document.getElementById("stats");
-            stats.innerHTML = `Total Participants: ${totalParticipants} | Total Amount: ${totalAmount.toFixed(6)} Nano`;
-        }
-
-        // Call the function to fetch transaction history and display the ticket table
-        fetchTransactionHistory();
-    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Lottery Ticket Table</h1>
-
-        <div class="lottery-address">
-            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
-            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-            <div class="lottery-address-buttons">
-                <button onclick="copyToClipboard()">Copy</button>
-                <button onclick="openNanoWallet()">Open Wallet</button>
-            </div>
-        </div>
-
-        <div class="table-container">
-            <table id="ticket-table">
-                <thead>
-                    <tr>
-                        <th>Ticket Numbers</th>
-                        <th>Address</th>
-                    </tr>
-                </thead>
-                <tbody id="ticket-table-body">
-                </tbody>
-            </table>
-        </div>
-
-        <div id="stats"></div>
-    </div>
-
-    <div id="overlay">
-        <div id="overlay-content"></div>
-        <span id="overlay-close">×</span>
-    </div>
-
     <canvas id="transactionsCanvas"></canvas>
 
-    <div class="rules-button" onclick="openRules()">Rules</div>
-
-    <div class="rules-overlay" id="rulesOverlay">
-        <div class="rules-content">
-            <h2>Lottery Rules</h2>
-            <p>Placeholder text for lottery rules.</p>
-            <span class="rules-close" onclick="closeRules()">×</span>
-        </div>
-    </div>
-
     <script>
-        // Rules overlay functions
-        function openRules() {
-            const rulesOverlay = document.getElementById("rulesOverlay");
-            rulesOverlay.style.display = "flex";
+        // Particle class
+        class Particle {
+            constructor(x, y, radius, image, address, sequenceNumber) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.image = image;
+                this.address = address;
+                this.sequenceNumber = sequenceNumber;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 4,
+                    y: (Math.random() - 0.5) * 4
+                };
+
+                this.image.addEventListener('click', this.openInBrowser.bind(this));
+            }
+
+            draw(context) {
+                context.drawImage(this.image, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+                context.font = '12px Arial';
+                context.fillStyle = '#ffffff';
+                context.fillText(this.sequenceNumber, this.x - 6, this.y + 4);
+            }
+
+            update(canvas) {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+
+                if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                    this.velocity.x *= -1;
+                }
+
+                if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                    this.velocity.y *= -1;
+                }
+            }
+
+            openInBrowser() {
+                const nanolookerUrl = `https://www.nanolooker.com/account/${this.address}`;
+                window.open(nanolookerUrl, '_blank');
+            }
         }
 
-        function closeRules() {
-            const rulesOverlay = document.getElementById("rulesOverlay");
-            rulesOverlay.style.display = "none";
-        }
+        // Make API request to fetch transactions
+        const account = 'nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc';
+        const apiUrl = `https://proxy.nanos.cc/proxy/?action=account_history&account=${account}&count=-1`;
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const transactions = data.history;
+                const images = [];
+
+                const canvas = document.getElementById('transactionsCanvas');
+                const context = canvas.getContext('2d');
+
+                const loadImagePromises = transactions.map((transaction, index) => {
+                    const sender = transaction.account;
+                    const natriconUrl = `https://natricon.com/api/v1/nano?address=${sender}`;
+                    return new Promise((resolve, reject) => {
+                        const image = new Image();
+                        image.src = natriconUrl;
+                        image.onload = () => {
+                            images.push(new Particle(canvas.width / 2, canvas.height / 2, 30, image, sender, index + 1));
+                            resolve();
+                        };
+                        image.onerror = reject;
+                    });
+                });
+
+                Promise.all(loadImagePromises)
+                    .then(() => {
+                        // Set canvas dimensions
+                        canvas.width = window.innerWidth;
+                        canvas.height = window.innerHeight;
+
+                        function animate() {
+                            requestAnimationFrame(animate);
+                            context.clearRect(0, 0, canvas.width, canvas.height);
+
+                            images.forEach(particle => {
+                                particle.update(canvas);
+                                particle.draw(context);
+                            });
+                        }
+
+                        animate();
+                    })
+                    .catch(error => console.error(error));
+            })
+            .catch(error => console.error(error));
     </script>
 </body>
 </html>
