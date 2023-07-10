@@ -1,37 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Transactions</title>
+    <title>Lottery Ticket Table and Transactions</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
             margin: 0;
-            overflow: hidden;
+            padding: 20px;
         }
 
-        canvas {
-            display: block;
-            position: fixed;
-            top: 40px;
-            left: 0;
-            width: 100%;
-            height: calc(100% - 40px);
-            border: 1px solid #ccc;
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
         }
 
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background-color: #f2f2f2;
-            padding: 10px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .lottery-address {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            z-index: 1;
+            margin-bottom: 20px;
         }
 
-        .header-button {
+        .lottery-address-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .lottery-address-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .lottery-address-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lottery-address-buttons button {
             padding: 8px 12px;
             border: none;
             border-radius: 5px;
@@ -40,36 +57,96 @@
             cursor: pointer;
         }
 
-        .header-button:hover {
+        .lottery-address-buttons button:hover {
             background-color: #0056b3;
         }
 
-        .lottery-address {
-            font-weight: bold;
-            margin-right: 10px;
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
-        .lottery-address-input {
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
             padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .no-entries-row {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+
+        .address-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .address-cell img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .rules-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
             border: none;
             border-radius: 5px;
+            cursor: pointer;
+            z-index: 999;
         }
+
+        .rules-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .rules-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 600px;
+        }
+
+        .rules-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
     </style>
-</head>
-<body>
-    <div class="header">
-        <div>
-            <button class="header-button" onclick="copyToClipboard()">Copy Address</button>
-            <button class="header-button" onclick="openNanoWallet()">Open Wallet</button>
-        </div>
-        <div>
-            <span class="lottery-address">Lottery Address:</span>
-            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-        </div>
-    </div>
-
-    <canvas id="transactionsCanvas"></canvas>
-
     <script>
         // Particle class
         class Particle {
@@ -90,9 +167,9 @@
 
             draw(context) {
                 context.drawImage(this.image, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
-                context.font = '12px Arial';
+                context.font = '16px Arial';
                 context.fillStyle = '#ffffff';
-                context.fillText(this.sequenceNumber, this.x - 6, this.y + 4);
+                context.fillText(this.sequenceNumber, this.x - 6, this.y + this.radius + 16);
             }
 
             update(canvas) {
@@ -114,6 +191,127 @@
             }
         }
 
+        // Function to copy the lottery address to the clipboard
+        function copyToClipboard() {
+            const lotteryAddress = document.getElementById("lottery-address-input");
+            lotteryAddress.select();
+            lotteryAddress.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            alert("Address copied to clipboard!");
+        }
+
+        // Function to open the Nano wallet with the lottery address
+        function openNanoWallet() {
+            const lotteryAddress = document.getElementById("lottery-address-input").value;
+            const walletURL = "nano:" + lotteryAddress;
+            window.open(walletURL);
+        }
+
+        // Function to fetch the transaction history and display the ticket table
+        function fetchTransactionHistory() {
+            const url = "https://proxy.nanos.cc/proxy/";
+            const params = {
+                "action": "account_history",
+                "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
+                "count": "-1"
+            };
+
+            fetch(url + "?" + new URLSearchParams(params))
+                .then(response => response.json())
+                .then(data => {
+                    const transactions = data.history;
+                    const ticketEntries = {};
+                    let ticketNumber = 1;
+
+                    transactions.forEach(transaction => {
+                        if (transaction.type === "receive") {
+                            const amount = parseFloat(transaction.amount);
+                            if (amount >= 1e26) {
+                                const address = transaction.account;
+                                if (!ticketEntries[address]) {
+                                    ticketEntries[address] = [];
+                                }
+                                const ticketCount = Math.floor(amount / 1e26);
+                                for (let i = 0; i < ticketCount; i++) {
+                                    ticketEntries[address].push(ticketNumber);
+                                   ticketNumber++;
+                                }
+                            }
+                        }
+                    });
+
+                    const ticketTableBody = document.getElementById("ticket-table-body");
+
+                    if (Object.keys(ticketEntries).length > 0) {
+                        ticketTableBody.innerHTML = "";
+                        for (const address in ticketEntries) {
+                            const row = document.createElement("tr");
+                            const ticketNumberCell = document.createElement("td");
+                            const addressCell = document.createElement("td");
+                            addressCell.classList.add("address-cell");
+
+                            ticketNumberCell.textContent = ticketEntries[address].join(", ");
+                            row.appendChild(ticketNumberCell);
+                            row.appendChild(addressCell);
+                            ticketTableBody.appendChild(row);
+
+                            const image = createImageElement(address);
+                            addressCell.appendChild(image);
+                        }
+                    } else {
+                        const noEntriesRow = document.createElement("tr");
+                        const noEntriesCell = document.createElement("td");
+                        noEntriesCell.setAttribute("colspan", "2");
+                        noEntriesCell.textContent = "No lottery entries found.";
+
+                        noEntriesRow.appendChild(noEntriesCell);
+                        ticketTableBody.appendChild(noEntriesRow);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching transaction history:", error);
+                });
+        }
+
+        // Function to create an image element for the Natricon
+        function createImageElement(address) {
+            const img = document.createElement("img");
+            const natriconUrl = `https://natricon.com/api/v1/nano?address=${address}`;
+            img.src = natriconUrl;
+            img.width = "40";
+            img.height = "40";
+            img.onclick = function() {
+                openOverlay(address);
+            };
+            return img;
+        }
+
+        // Function to open the overlay with the full address
+        function openOverlay(address) {
+            const overlay = document.getElementById("overlay");
+            const overlayContent = document.getElementById("overlay-content");
+            overlayContent.innerHTML = "";
+
+            const closeBtn = document.getElementById("overlay-close");
+            closeBtn.onclick = function() {
+                closeOverlay();
+            };
+
+            const addressLink = document.createElement("a");
+            addressLink.href = `https://www.nanolooker.com/account/${address}`;
+            addressLink.target = "_blank";
+            addressLink.textContent = address;
+
+            overlayContent.appendChild(addressLink);
+            overlay.style.display = "flex";
+        }
+
+        // Function to close the overlay
+        function closeOverlay() {
+            const overlay = document.getElementById("overlay");
+            overlay.style.display = "none";
+        }
+
         // Make API request to fetch transactions
         const account = 'nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc';
         const apiUrl = `https://proxy.nanos.cc/proxy/?action=account_history&account=${account}&count=-1`;
@@ -123,8 +321,9 @@
                 const transactions = data.history;
                 const images = [];
 
-                const canvas = document.getElementById('transactionsCanvas');
+                const canvas = document.createElement("canvas");
                 const context = canvas.getContext('2d');
+                document.body.appendChild(canvas);
 
                 const loadImagePromises = transactions.map((transaction, index) => {
                     const sender = transaction.account;
@@ -133,7 +332,7 @@
                         const image = new Image();
                         image.src = natriconUrl;
                         image.onload = () => {
-                            images.push(new Particle(canvas.width / 2, canvas.height / 2, 30, image, sender, index + 1));
+                            images.push(new Particle(canvas.width / 2, canvas.height / 2, 60, image, sender, index + 1));
                             resolve();
                         };
                         image.onerror = reject;
@@ -144,7 +343,7 @@
                     .then(() => {
                         // Set canvas dimensions
                         canvas.width = window.innerWidth;
-                        canvas.height = window.innerHeight - 40;
+                        canvas.height = window.innerHeight;
 
                         function animate() {
                             requestAnimationFrame(animate);
@@ -162,19 +361,62 @@
             })
             .catch(error => console.error(error));
 
-        function copyToClipboard() {
-            const lotteryAddress = document.getElementById("lottery-address-input");
-            lotteryAddress.select();
-            lotteryAddress.setSelectionRange(0, 99999);
-            document.execCommand("copy");
-            alert("Address copied to clipboard!");
+        // Rules overlay functions
+        function openRules() {
+            const rulesOverlay = document.getElementById("rulesOverlay");
+            rulesOverlay.style.display = "flex";
         }
 
-        function openNanoWallet() {
-            const lotteryAddress = document.getElementById("lottery-address-input").value;
-            const walletURL = "nano:" + lotteryAddress;
-            window.open(walletURL);
+        function closeRules() {
+            const rulesOverlay = document.getElementById("rulesOverlay");
+            rulesOverlay.style.display = "none";
         }
+
+        // Call the function to fetch transaction history and display the ticket table
+        fetchTransactionHistory();
     </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Lottery Ticket Table</h1>
+
+        <div class="lottery-address">
+            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
+            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+            <div class="lottery-address-buttons">
+                <button onclick="copyToClipboard()">Copy</button>
+                <button onclick="openNanoWallet()">Open Wallet</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Numbers</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody id="ticket-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="overlay-content"></div>
+        <span id="overlay-close">Close</span>
+    </div>
+
+    <canvas id="transactionsCanvas"></canvas>
+    <div class="rules-button" onclick="openRules()">Rules</div>
+    <div class="rules-overlay" id="rulesOverlay">
+        <div class="rules-content">
+            <h2>Lottery Rules</h2>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque nec aliquet mauris, id rhoncus orci. In congue turpis vitae justo iaculis, at aliquet nunc tempor. Vivamus tempor dui vel ante feugiat, vel aliquam velit eleifend. Curabitur pulvinar commodo urna, ut placerat justo porta ut. Nulla iaculis id purus et pharetra. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Morbi finibus, lorem ac faucibus gravida, erat purus ultrices felis, in congue mi tortor et tortor. Nullam congue neque eu ligula fermentum ultricies. Fusce sed bibendum nisl. Donec mollis feugiat dolor vel consectetur.</p>
+            <p>Etiam semper felis nec nibh scelerisque ullamcorper. Vestibulum condimentum enim a tristique cursus. In ac diam quis dui convallis sollicitudin at non erat. Maecenas id nunc nec enim vestibulum facilisis anon urna. Ut in lacinia lectus. Curabitur vestibulum purus sed lacus tristique malesuada. Morbi feugiat velit non quam pellentesque tristique. Suspendisse potenti.</p>
+            <span class="rules-close" onclick="closeRules()">Close</span>
+        </div>
+    </div>
 </body>
 </html>
