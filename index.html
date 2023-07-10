@@ -1,93 +1,149 @@
+!»
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Transactions</title>
+    <title>Lottery Ticket Table</title>
     <style>
-        #transactions {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
             margin-bottom: 20px;
         }
 
-        .transaction-image {
-            width: 100px;
-            height: 100px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .lottery-address {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .lottery-address-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .lottery-address-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .lottery-address-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lottery-address-buttons button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
             cursor: pointer;
         }
 
-        #popup-container {
+        .lottery-address-buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .no-entries-row {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+
+        .address-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .address-cell img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        #overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
-            visibility: hidden;
         }
 
-        #popup-window {
-            background-color: #fff;
+        #overlay-content {
+            background-color: white;
             padding: 20px;
             border-radius: 5px;
-            max-width: 400px;
-            max-height: 300px;
-            overflow-y: auto;
+        }
+
+        #overlay-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
         }
     </style>
-</head>
-<body>
-    <div id="transactions"></div>
-
-    <div id="popup-container">
-        <div id="popup-window"></div>
-    </div>
-
     <script>
-        // Function to create and append an image element
-        function createImageElement(src, address, ticketNumbers) {
-            const img = document.createElement('img');
-            img.src = src;
-            img.classList.add('transaction-image');
-            img.onclick = function() {
-                openAddressWindow(address, ticketNumbers);
-            };
-            return img;
+        // Function to copy the lottery address to the clipboard
+        function copyToClipboard() {
+            const lotteryAddress = document.getElementById("lottery-address-input");
+            lotteryAddress.select();
+            lotteryAddress.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            alert("Address copied to clipboard!");
         }
 
-        // Function to open a window with the address and ticket numbers
-        function openAddressWindow(address, ticketNumbers) {
-            const popupWindow = document.getElementById('popup-window');
-            popupWindow.innerHTML = '';
-            const addressHeader = document.createElement('h2');
-            addressHeader.textContent = 'Address: ' + address;
-            popupWindow.appendChild(addressHeader);
-            const ticketNumbersParagraph = document.createElement('p');
-            ticketNumbersParagraph.textContent = 'Ticket Numbers: ' + ticketNumbers.join(', ');
-            popupWindow.appendChild(ticketNumbersParagraph);
-            const closeButton = document.createElement('button');
-            closeButton.textContent = 'Close';
-            closeButton.onclick = function() {
-                closePopupWindow();
-            };
-            popupWindow.appendChild(closeButton);
-            const popupContainer = document.getElementById('popup-container');
-            popupContainer.style.visibility = 'visible';
+        // Function to open the Nano wallet with the lottery address
+        function openNanoWallet() {
+            const lotteryAddress = document.getElementById("lottery-address-input").value;
+            const walletURL = "nano:" + lotteryAddress;
+            window.open(walletURL);
         }
 
-        // Function to close the popup window
-        function closePopupWindow() {
-            const popupContainer = document.getElementById('popup-container');
-            popupContainer.style.visibility = 'hidden';
-        }
-
-        // Make API request to fetch transactions
+        // Function to fetch the transaction history and display the ticket table
         function fetchTransactionHistory() {
             const url = "https://proxy.nanos.cc/proxy/";
             const params = {
@@ -103,31 +159,49 @@
                     const ticketEntries = {};
                     let ticketNumber = 1;
 
-                    for (let i = transactions.length - 1; i >= 0; i--) {
-                        const transaction = transactions[i];
+                    transactions.forEach(transaction => {
                         if (transaction.type === "receive") {
                             const amount = parseFloat(transaction.amount);
                             if (amount >= 1e26) {
                                 const address = transaction.account;
-                                const ticketCount = Math.floor(amount / 1e26);
                                 if (!ticketEntries[address]) {
                                     ticketEntries[address] = [];
                                 }
-                                for (let j = 0; j < ticketCount; j++) {
+                                const ticketCount = Math.floor(amount / 1e26);
+                                for (let i = 0; i < ticketCount; i++) {
                                     ticketEntries[address].push(ticketNumber);
                                     ticketNumber++;
                                 }
                             }
                         }
-                    }
+                    });
 
-                    const transactionsDiv = document.getElementById('transactions');
-                    transactionsDiv.innerHTML = '';
+                    const ticketTableBody = document.getElementById("ticket-table-body");
 
-                    for (const address in ticketEntries) {
-                        const natriconUrl = `https://natricon.com/api/v1/nano?address=${address}`;
-                        const image = createImageElement(natriconUrl, address, ticketEntries[address]);
-                        transactionsDiv.appendChild(image);
+                    if (Object.keys(ticketEntries).length > 0) {
+                        ticketTableBody.innerHTML = "";
+                        for (const address in ticketEntries) {
+                            const row = document.createElement("tr");
+                            const ticketNumberCell = document.createElement("td");
+                            const addressCell = document.createElement("td");
+                            addressCell.classList.add("address-cell");
+
+                            ticketNumberCell.textContent = ticketEntries[address].join(", ");
+                            row.appendChild(ticketNumberCell);
+                            row.appendChild(addressCell);
+                            ticketTableBody.appendChild(row);
+
+                            const image = createImageElement(address);
+                            addressCell.appendChild(image);
+                        }
+                    } else {
+                        const noEntriesRow = document.createElement("tr");
+                        const noEntriesCell = document.createElement("td");
+                        noEntriesCell.setAttribute("colspan", "2");
+                        noEntriesCell.textContent = "No lottery entries found.";
+
+                        noEntriesRow.appendChild(noEntriesCell);
+                        ticketTableBody.appendChild(noEntriesRow);
                     }
                 })
                 .catch(error => {
@@ -135,7 +209,79 @@
                 });
         }
 
+        // Function to create an image element for the Natricon
+        function createImageElement(address) {
+            const img = document.createElement("img");
+            const natriconUrl = `https://natricon.com/api/v1/nano?address=${address}`;
+            img.src = natriconUrl;
+            img.width = "40";
+            img.height = "40";
+            img.onclick = function() {
+                openOverlay(address);
+            };
+            return img;
+        }
+
+        // Function to open the overlay with the full address
+        function openOverlay(address) {
+            const overlay = document.getElementById("overlay");
+            const overlayContent = document.getElementById("overlay-content");
+            overlayContent.innerHTML = "";
+
+            const closeBtn = document.getElementById("overlay-close");
+            closeBtn.onclick = function() {
+                closeOverlay();
+            };
+
+            const addressLink = document.createElement("a");
+            addressLink.href = `https://www.nanolooker.com/account/${address}`;
+            addressLink.target = "_blank";
+            addressLink.textContent = address;
+
+            overlayContent.appendChild(addressLink);
+            overlay.style.display = "flex";
+        }
+
+        // Function to close the overlay
+        function closeOverlay() {
+            const overlay = document.getElementById("overlay");
+            overlay.style.display = "none";
+        }
+
+        // Call the function to fetch transaction history and display the ticket table
         fetchTransactionHistory();
     </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Lottery Ticket Table</h1>
+
+        <div class="lottery-address">
+            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
+            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+            <div class="lottery-address-buttons">
+                <button onclick="copyToClipboard()">Copy</button>
+                <button onclick="openNanoWallet()">Open Wallet</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Numbers</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody id="ticket-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="overlay-content"></div>
+        <span id="overlay-close">Close</span>
+    </div>
 </body>
 </html>
