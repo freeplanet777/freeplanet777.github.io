@@ -1,5 +1,3 @@
-!»
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -95,8 +93,8 @@
         }
 
         .address-cell img {
-            width: 40px;
-            height: 40px;
+            width: 80px;
+            height: 80px;
             margin-right: 10px;
             cursor: pointer;
         }
@@ -111,15 +109,73 @@
             display: none;
             justify-content: center;
             align-items: center;
+            z-index: 9999;
         }
 
         #overlay-content {
             background-color: white;
             padding: 20px;
             border-radius: 5px;
+            position: relative;
+            max-width: 600px;
         }
 
         #overlay-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        #transactionsCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        #stats {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+        }
+
+        .rules-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 9999;
+        }
+
+        .rules-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .rules-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .rules-close {
             position: absolute;
             top: 10px;
             right: 10px;
@@ -158,11 +214,15 @@
                     const transactions = data.history;
                     const ticketEntries = {};
                     let ticketNumber = 1;
+                    let totalParticipants = 0;
+                    let totalAmount = 0;
 
                     transactions.forEach(transaction => {
                         if (transaction.type === "receive") {
                             const amount = parseFloat(transaction.amount);
-                            if (amount >= 1e26) {
+                          
+
+                           if (amount >= 1e26) {
                                 const address = transaction.account;
                                 if (!ticketEntries[address]) {
                                     ticketEntries[address] = [];
@@ -172,6 +232,8 @@
                                     ticketEntries[address].push(ticketNumber);
                                     ticketNumber++;
                                 }
+                                totalParticipants++;
+                                totalAmount += amount;
                             }
                         }
                     });
@@ -203,6 +265,8 @@
                         noEntriesRow.appendChild(noEntriesCell);
                         ticketTableBody.appendChild(noEntriesRow);
                     }
+
+                    updateStats(totalParticipants, totalAmount);
                 })
                 .catch(error => {
                     console.error("Error fetching transaction history:", error);
@@ -214,8 +278,8 @@
             const img = document.createElement("img");
             const natriconUrl = `https://natricon.com/api/v1/nano?address=${address}`;
             img.src = natriconUrl;
-            img.width = "40";
-            img.height = "40";
+            img.width = "80";
+            img.height = "80";
             img.onclick = function() {
                 openOverlay(address);
             };
@@ -226,10 +290,10 @@
         function openOverlay(address) {
             const overlay = document.getElementById("overlay");
             const overlayContent = document.getElementById("overlay-content");
-            overlayContent.innerHTML = "";
+            overlay.style.display = "flex";
 
-            const closeBtn = document.getElementById("overlay-close");
-            closeBtn.onclick = function() {
+            const overlayClose = document.getElementById("overlay-close");
+            overlayClose.onclick = function() {
                 closeOverlay();
             };
 
@@ -238,14 +302,20 @@
             addressLink.target = "_blank";
             addressLink.textContent = address;
 
+            overlayContent.innerHTML = '';
             overlayContent.appendChild(addressLink);
-            overlay.style.display = "flex";
         }
 
         // Function to close the overlay
         function closeOverlay() {
             const overlay = document.getElementById("overlay");
             overlay.style.display = "none";
+        }
+
+        // Function to update statistics
+        function updateStats(totalParticipants, totalAmount) {
+            const stats = document.getElementById("stats");
+            stats.innerHTML = `Total Participants: ${totalParticipants} | Total Amount: ${totalAmount.toFixed(6)} Nano`;
         }
 
         // Call the function to fetch transaction history and display the ticket table
@@ -277,11 +347,38 @@
                 </tbody>
             </table>
         </div>
+
+        <div id="stats"></div>
     </div>
 
     <div id="overlay">
         <div id="overlay-content"></div>
-        <span id="overlay-close">Close</span>
+        <span id="overlay-close">×</span>
     </div>
+
+    <canvas id="transactionsCanvas"></canvas>
+
+    <div class="rules-button" onclick="openRules()">Rules</div>
+
+    <div class="rules-overlay" id="rulesOverlay">
+        <div class="rules-content">
+            <h2>Lottery Rules</h2>
+            <p>Placeholder text for lottery rules.</p>
+            <span class="rules-close" onclick="closeRules()">×</span>
+        </div>
+    </div>
+
+    <script>
+        // Rules overlay functions
+        function openRules() {
+            const rulesOverlay = document.getElementById("rulesOverlay");
+            rulesOverlay.style.display = "flex";
+        }
+
+        function closeRules() {
+            const rulesOverlay = document.getElementById("rulesOverlay");
+            rulesOverlay.style.display = "none";
+        }
+    </script>
 </body>
 </html>
