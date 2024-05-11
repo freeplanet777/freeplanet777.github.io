@@ -1,1 +1,1 @@
-# freeplanet777.github.io
+https://github.com/freeplanet777/freeplanet777.github.io/discussions
