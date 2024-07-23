@@ -1,10 +1,224 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="refresh" content="0; url=https://github.com/freeplanet777/freeplanet777.github.io/discussions" />
-    <title>Redirect</title>
+    <title>Lottery Ticket Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .lottery-address {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .lottery-address-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .lottery-address-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .lottery-address-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lottery-address-buttons button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .lottery-address-buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .no-entries-row {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+    </style>
+    <script>
+        function copyToClipboard() {
+            const lotteryAddress = document.getElementById("lottery-address-input");
+            lotteryAddress.select();
+            lotteryAddress.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            alert("Address copied to clipboard!");
+        }
+
+        function openNanoWallet(address) {
+            const walletURL = "nano:" + address;
+            window.open(walletURL);
+        }
+
+        function fetchTransactionHistory() {
+            const url = "https://proxy.nanos.cc/proxy/";
+            const params = {
+                "action": "account_history",
+                "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
+                "count": "-1"
+            };
+
+            fetch(url + "?" + new URLSearchParams(params))
+                .then(response => response.json())
+                .then(data => {
+                    const transactions = data.history;
+                    const ticketEntries = [];
+                    let ticketNumber = 1;
+
+                    for (let i = transactions.length - 1; i >= 0; i--) {
+                        const transaction = transactions[i];
+                        if (transaction.type === "receive") {
+                            const amount = parseFloat(transaction.amount);
+                            if (amount >= 1e26) {
+                                const address = transaction.account;
+                                const ticketCount = Math.floor(amount / 1e26);
+                                for (let j = 0; j < ticketCount; j++) {
+                                    ticketEntries.push({ ticketNumber, address });
+                                    ticketNumber++;
+                                }
+                            }
+                        }
+                    }
+
+                    const ticketTableBody = document.getElementById("ticket-table-body");
+
+                    if (ticketEntries.length > 0) {
+                        ticketTableBody.innerHTML = "";
+                        for (const ticketEntry of ticketEntries) {
+                            const row = document.createElement("tr");
+                            const ticketNumberCell = document.createElement("td");
+                            const addressCell = document.createElement("td");
+                            addressCell.classList.add("address-cell");
+
+                            ticketNumberCell.textContent = ticketEntry.ticketNumber;
+
+                            row.appendChild(ticketNumberCell);
+                            row.appendChild(addressCell);
+                            ticketTableBody.appendChild(row);
+
+                            loadNatriconImage(ticketEntry.address, ticketEntry.ticketNumber, row);
+                        }
+                    } else {
+                        const noEntriesRow = document.createElement("tr");
+                        const noEntriesCell = document.createElement("td");
+                        noEntriesCell.setAttribute("colspan", "2");
+                        noEntriesCell.textContent = "No lottery entries found.";
+
+                        noEntriesRow.appendChild(noEntriesCell);
+                        ticketTableBody.appendChild(noEntriesRow);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching transaction history:", error);
+                });
+        }
+
+        function loadNatriconImage(address, ticketNumber, row) {
+            const url = `https://natricon.com/api/v1/nano?address=${address}`;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(svgData => {
+                    const parser = new DOMParser();
+                    const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+                    svgElement.setAttribute("width", "40");
+                    svgElement.setAttribute("height", "40");
+
+                    const imageWrapper = document.createElement("div");
+                    imageWrapper.appendChild(svgElement);
+
+                    imageWrapper.addEventListener("click", function () {
+                        openNanoWallet(address);
+                    });
+
+                    const addressCell = row.querySelector(".address-cell");
+                    addressCell.textContent = "";
+                    addressCell.appendChild(imageWrapper);
+                })
+                .catch(error => {
+                    console.error("Error loading Natricon image:", error);
+                });
+        }
+
+        fetchTransactionHistory();
+    </script>
 </head>
 <body>
-    <p>Redirecting to <a href="https://github.com/freeplanet777/freeplanet777.github.io/discussions">https://github.com/freeplanet777/freeplanet777.github.io/discussions</a></p>
+    <div class="container">
+        <h1>Lottery Ticket Table</h1>
+
+        <div class="lottery-address">
+            <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
+            <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
+            <div class="lottery-address-buttons">
+                <button onclick="copyToClipboard()">Copy</button>
+                <button onclick="openNanoWallet()">Open Wallet</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Number</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody id="ticket-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>
