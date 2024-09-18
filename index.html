@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lottery Ticket Table</title>
     <style>
         body {
@@ -9,13 +11,11 @@
             margin: 0;
             padding: 20px;
         }
-
         h1 {
             text-align: center;
             color: #333;
             margin-bottom: 20px;
         }
-
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -24,30 +24,25 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             border-radius: 5px;
         }
-
         .lottery-address {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
         }
-
         .lottery-address-label {
             font-weight: bold;
             margin-right: 10px;
         }
-
         .lottery-address-input {
             flex-grow: 1;
             padding: 8px;
             border: none;
             border-radius: 5px;
         }
-
         .lottery-address-buttons {
             display: flex;
             gap: 10px;
         }
-
         .lottery-address-buttons button {
             padding: 8px 12px;
             border: none;
@@ -56,71 +51,51 @@
             color: #fff;
             cursor: pointer;
         }
-
         .lottery-address-buttons button:hover {
             background-color: #0056b3;
         }
-
         .table-container {
             max-height: 400px;
             overflow-y: auto;
         }
-
         table {
             border-collapse: collapse;
             width: 100%;
         }
-
         th, td {
             padding: 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-
         th {
             background-color: #f2f2f2;
         }
-
         .no-entries-row {
             text-align: center;
             font-style: italic;
             color: #777;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        function copyToClipboard() {
-            const lotteryAddress = document.getElementById("lottery-address-input");
-            lotteryAddress.select();
-            lotteryAddress.setSelectionRange(0, 99999);
-            document.execCommand("copy");
-            alert("Address copied to clipboard!");
-        }
-
-        function openNanoWallet(address) {
-            const walletURL = "nano:" + address;
-            window.open(walletURL);
-        }
-
         function fetchTransactionHistory() {
-            const url = "https://proxy.nanos.cc/proxy/";
+            const url = "https://rpc.nano.to";
             const params = {
                 "action": "account_history",
                 "account": "nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc",
-                "count": "-1"
+                "count": "100"
             };
 
-            fetch(url + "?" + new URLSearchParams(params))
-                .then(response => response.json())
-                .then(data => {
-                    const transactions = data.history;
+            axios.post(url, params)
+                .then(response => {
+                    const transactions = response.data.history;
                     const ticketEntries = [];
                     let ticketNumber = 1;
 
-                    for (let i = transactions.length - 1; i >= 0; i--) {
-                        const transaction = transactions[i];
+                    transactions.forEach(transaction => {
                         if (transaction.type === "receive") {
                             const amount = parseFloat(transaction.amount);
-                            if (amount >= 1e26) {
+                            if (amount >= 1e26) { // Только транзакции >= 1 NANO
                                 const address = transaction.account;
                                 const ticketCount = Math.floor(amount / 1e26);
                                 for (let j = 0; j < ticketCount; j++) {
@@ -129,26 +104,28 @@
                                 }
                             }
                         }
-                    }
+                    });
 
                     const ticketTableBody = document.getElementById("ticket-table-body");
 
                     if (ticketEntries.length > 0) {
                         ticketTableBody.innerHTML = "";
-                        for (const ticketEntry of ticketEntries) {
+                        ticketEntries.forEach(ticketEntry => {
                             const row = document.createElement("tr");
                             const ticketNumberCell = document.createElement("td");
                             const addressCell = document.createElement("td");
                             addressCell.classList.add("address-cell");
 
                             ticketNumberCell.textContent = ticketEntry.ticketNumber;
+                            addressCell.textContent = ticketEntry.address;
 
                             row.appendChild(ticketNumberCell);
                             row.appendChild(addressCell);
                             ticketTableBody.appendChild(row);
 
-                            loadNatriconImage(ticketEntry.address, ticketEntry.ticketNumber, row);
-                        }
+                            // Загрузка изображения Natricon для каждого адреса
+                            loadNatriconImage(ticketEntry.address, row);
+                        });
                     } else {
                         const noEntriesRow = document.createElement("tr");
                         const noEntriesCell = document.createElement("td");
@@ -164,20 +141,20 @@
                 });
         }
 
-        function loadNatriconImage(address, ticketNumber, row) {
+        function loadNatriconImage(address, row) {
             const url = `https://natricon.com/api/v1/nano?address=${address}`;
 
-            fetch(url)
-                .then(response => response.text())
-                .then(svgData => {
+            axios.get(url)
+                .then(response => {
                     const parser = new DOMParser();
-                    const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+                    const svgElement = parser.parseFromString(response.data, "image/svg+xml").documentElement;
                     svgElement.setAttribute("width", "40");
                     svgElement.setAttribute("height", "40");
 
                     const imageWrapper = document.createElement("div");
                     imageWrapper.appendChild(svgElement);
 
+                    // Добавление кликабельного функционала для открытия кошелька
                     imageWrapper.addEventListener("click", function () {
                         openNanoWallet(address);
                     });
@@ -191,7 +168,12 @@
                 });
         }
 
-        fetchTransactionHistory();
+        function openNanoWallet(address) {
+            const walletURL = "nano:" + address;
+            window.open(walletURL);
+        }
+
+        window.onload = fetchTransactionHistory;
     </script>
 </head>
 <body>
@@ -202,8 +184,8 @@
             <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
             <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
             <div class="lottery-address-buttons">
-                <button onclick="copyToClipboard()">Copy</button>
-                <button onclick="openNanoWallet()">Open Wallet</button>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('lottery-address-input').value)">Copy</button>
+                <button onclick="openNanoWallet(document.getElementById('lottery-address-input').value)">Open Wallet</button>
             </div>
         </div>
 
