@@ -29,6 +29,7 @@
             align-items: center;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            justify-content: center;
         }
         .lottery-address-label {
             font-weight: bold;
@@ -41,6 +42,7 @@
             border-radius: 5px;
             min-width: 0;
             word-break: break-all;
+            text-align: center;
         }
         .lottery-address-buttons {
             display: flex;
@@ -205,18 +207,13 @@
         }
 
         function openNanoWallet(address) {
-            const walletURL = "nano:" + address;
-            if (navigator.userAgent.includes("TelegramWebApp")) {
-                // Open in browser if accessed from Telegram Web App
-                window.open(walletURL, '_blank');
-            } else {
-                window.open(walletURL);
-            }
+            const walletURL = "https://nanolooker.com/account/" + address;
+            window.open(walletURL, '_blank');
         }
 
         function populateFilterDropdown() {
             const filterSelect = document.getElementById('filter-select');
-            filterSelect.innerHTML = '<option value="">Select a participant</option>';
+            filterSelect.innerHTML = '<option value="">All participants</option>';
             participants.forEach(participant => {
                 const option = document.createElement('option');
                 option.value = participant.address;
@@ -250,9 +247,12 @@
         function filterTickets() {
             const filterSelect = document.getElementById('filter-select');
             const filterValue = filterSelect.value.toLowerCase();
-            const filteredEntries = ticketEntries.filter(entry => entry.address.toLowerCase() === filterValue);
-
-            displayTickets(filteredEntries);
+            if (filterValue === "") {
+                displayTickets(ticketEntries);
+            } else {
+                const filteredEntries = ticketEntries.filter(entry => entry.address.toLowerCase() === filterValue);
+                displayTickets(filteredEntries);
+            }
         }
 
         function startNatriconAnimation() {
@@ -270,8 +270,11 @@
                             const parser = new DOMParser();
                             const svgElement = parser.parseFromString(response.data, "image/svg+xml").documentElement;
                             const dataURL = 'data:image/svg+xml;base64,' + btoa(new XMLSerializer().serializeToString(svgElement));
+
                             const img = new Image();
                             img.src = dataURL;
+                            img.width = 40;
+                            img.height = 40;
                             return { img, address: participant.address };
                         })
                         .catch(error => {
@@ -317,11 +320,11 @@
 <body>
     <div class="container">
         <h1>Lottery Ticket Table</h1>
-        
+
         <div class="canvas-container">
             <canvas id="natricon-canvas" class="circle-canvas" width="300" height="300"></canvas>
         </div>
-        
+
         <div class="lottery-address">
             <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
             <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
@@ -334,7 +337,7 @@
 
         <div class="filter-container">
             <select id="filter-select" onchange="filterTickets()">
-                <option value="">Select a participant</option>
+                <option value="">All participants</option>
             </select>
         </div>
 
