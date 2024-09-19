@@ -28,6 +28,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .lottery-address-label {
             font-weight: bold;
@@ -38,10 +39,15 @@
             padding: 8px;
             border: none;
             border-radius: 5px;
+            min-width: 0;
+            word-break: break-all;
         }
         .lottery-address-buttons {
             display: flex;
             gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+            width: 100%;
         }
         .lottery-address-buttons button {
             padding: 8px 12px;
@@ -75,9 +81,31 @@
             font-style: italic;
             color: #777;
         }
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .circle-canvas {
+            border-radius: 50%;
+            background-color: #e6e6e6;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        .filter-container select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 10px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        let participants = [];
+        let ticketEntries = [];
+
         function fetchTransactionHistory() {
             const url = "https://rpc.nano.to";
             const params = {
@@ -89,7 +117,7 @@
             axios.post(url, params)
                 .then(response => {
                     const transactions = response.data.history;
-                    const ticketEntries = [];
+                    ticketEntries = [];
                     let ticketNumber = 1;
 
                     transactions.forEach(transaction => {
@@ -102,43 +130,51 @@
                                     ticketEntries.push({ ticketNumber, address });
                                     ticketNumber++;
                                 }
+                                if (!participants.some(participant => participant.address === address)) {
+                                    participants.push({ address });
+                                }
                             }
                         }
                     });
 
-                    const ticketTableBody = document.getElementById("ticket-table-body");
-
-                    if (ticketEntries.length > 0) {
-                        ticketTableBody.innerHTML = "";
-                        ticketEntries.forEach(ticketEntry => {
-                            const row = document.createElement("tr");
-                            const ticketNumberCell = document.createElement("td");
-                            const addressCell = document.createElement("td");
-                            addressCell.classList.add("address-cell");
-
-                            ticketNumberCell.textContent = ticketEntry.ticketNumber;
-                            addressCell.textContent = ticketEntry.address;
-
-                            row.appendChild(ticketNumberCell);
-                            row.appendChild(addressCell);
-                            ticketTableBody.appendChild(row);
-
-                            // Загрузка изображения Natricon для каждого адреса
-                            loadNatriconImage(ticketEntry.address, row);
-                        });
-                    } else {
-                        const noEntriesRow = document.createElement("tr");
-                        const noEntriesCell = document.createElement("td");
-                        noEntriesCell.setAttribute("colspan", "2");
-                        noEntriesCell.textContent = "No lottery entries found.";
-
-                        noEntriesRow.appendChild(noEntriesCell);
-                        ticketTableBody.appendChild(noEntriesRow);
-                    }
+                    displayTickets(ticketEntries);
+                    populateFilterDropdown();
                 })
                 .catch(error => {
                     console.error("Error fetching transaction history:", error);
                 });
+        }
+
+        function displayTickets(entries) {
+            const ticketTableBody = document.getElementById("ticket-table-body");
+            ticketTableBody.innerHTML = "";
+
+            if (entries.length > 0) {
+                entries.forEach(ticketEntry => {
+                    const row = document.createElement("tr");
+                    const ticketNumberCell = document.createElement("td");
+                    const addressCell = document.createElement("td");
+                    addressCell.classList.add("address-cell");
+
+                    ticketNumberCell.textContent = ticketEntry.ticketNumber;
+                    addressCell.textContent = ticketEntry.address;
+
+                    row.appendChild(ticketNumberCell);
+                    row.appendChild(addressCell);
+                    ticketTableBody.appendChild(row);
+
+                    // Загрузка изображения Natricon для каждого адреса
+                    loadNatriconImage(ticketEntry.address, row);
+                });
+            } else {
+                const noEntriesRow = document.createElement("tr");
+                const noEntriesCell = document.createElement("td");
+                noEntriesCell.setAttribute("colspan", "2");
+                noEntriesCell.textContent = "No lottery entries found.";
+
+                noEntriesRow.appendChild(noEntriesCell);
+                ticketTableBody.appendChild(noEntriesRow);
+            }
         }
 
         function loadNatriconImage(address, row) {
@@ -170,23 +206,136 @@
 
         function openNanoWallet(address) {
             const walletURL = "nano:" + address;
-            window.open(walletURL);
+            if (navigator.userAgent.includes("TelegramWebApp")) {
+                // Open in browser if accessed from Telegram Web App
+                window.open(walletURL, '_blank');
+            } else {
+                window.open(walletURL);
+            }
         }
 
-        window.onload = fetchTransactionHistory;
+        function populateFilterDropdown() {
+            const filterSelect = document.getElementById('filter-select');
+            filterSelect.innerHTML = '<option value="">Select a participant</option>';
+            participants.forEach(participant => {
+                const option = document.createElement('option');
+                option.value = participant.address;
+                option.textContent = `${participant.address.slice(-4)} (${participant.address})`;
+                loadNatriconImageToOption(participant.address, option);
+                filterSelect.appendChild(option);
+            });
+        }
+
+        function loadNatriconImageToOption(address, option) {
+            const url = `https://natricon.com/api/v1/nano?address=${address}`;
+
+            axios.get(url)
+                .then(response => {
+                    const parser = new DOMParser();
+                    const svgElement = parser.parseFromString(response.data, "image/svg+xml").documentElement;
+                    const dataURL = 'data:image/svg+xml;base64,' + btoa(new XMLSerializer().serializeToString(svgElement));
+
+                    const img = new Image();
+                    img.src = dataURL;
+                    img.width = 20;
+                    img.height = 20;
+                    img.style.verticalAlign = 'middle';
+                    option.prepend(img);
+                })
+                .catch(error => {
+                    console.error("Error loading Natricon image:", error);
+                });
+        }
+
+        function filterTickets() {
+            const filterSelect = document.getElementById('filter-select');
+            const filterValue = filterSelect.value.toLowerCase();
+            const filteredEntries = ticketEntries.filter(entry => entry.address.toLowerCase() === filterValue);
+
+            displayTickets(filteredEntries);
+        }
+
+        function startNatriconAnimation() {
+            const canvas = document.getElementById('natricon-canvas');
+            const ctx = canvas.getContext('2d');
+            const radius = canvas.width / 2;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const natricons = [];
+
+            function loadNatricons() {
+                const promises = participants.map(participant => {
+                    return axios.get(`https://natricon.com/api/v1/nano?address=${participant.address}`)
+                        .then(response => {
+                            const parser = new DOMParser();
+                            const svgElement = parser.parseFromString(response.data, "image/svg+xml").documentElement;
+                            const dataURL = 'data:image/svg+xml;base64,' + btoa(new XMLSerializer().serializeToString(svgElement));
+                            const img = new Image();
+                            img.src = dataURL;
+                            return { img, address: participant.address };
+                        })
+                        .catch(error => {
+                            console.error("Error loading Natricon image:", error);
+                            return null;
+                        });
+                });
+
+                Promise.all(promises).then(results => {
+                    results.forEach(result => {
+                        if (result) {
+                            natricons.push(result);
+                        }
+                    });
+                    animate();
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const angleIncrement = (2 * Math.PI) / natricons.length;
+                const currentTime = Date.now() / 1000;
+
+                natricons.forEach((nat, index) => {
+                    const angle = angleIncrement * index + currentTime;
+                    const x = centerX + radius * Math.cos(angle) * 0.7;
+                    const y = centerY + radius * Math.sin(angle) * 0.7;
+                    ctx.drawImage(nat.img, x - 20, y - 20, 40, 40);
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            loadNatricons();
+        }
+
+        window.onload = () => {
+            fetchTransactionHistory();
+            startNatriconAnimation();
+        };
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Lottery Ticket Table</h1>
-
+        
+        <div class="canvas-container">
+            <canvas id="natricon-canvas" class="circle-canvas" width="300" height="300"></canvas>
+        </div>
+        
         <div class="lottery-address">
             <label class="lottery-address-label" for="lottery-address-input">Lottery Address:</label>
             <input class="lottery-address-input" type="text" id="lottery-address-input" value="nano_3y8c71a5ck8rpe5eeqdqym5gwieobs1u79hhh8nxfse719o651tgwj5ha9tc" readonly>
-            <div class="lottery-address-buttons">
-                <button onclick="navigator.clipboard.writeText(document.getElementById('lottery-address-input').value)">Copy</button>
-                <button onclick="openNanoWallet(document.getElementById('lottery-address-input').value)">Open Wallet</button>
-            </div>
+        </div>
+
+        <div class="lottery-address-buttons">
+            <button onclick="navigator.clipboard.writeText(document.getElementById('lottery-address-input').value)">Copy</button>
+            <button onclick="openNanoWallet(document.getElementById('lottery-address-input').value)">Open Wallet</button>
+        </div>
+
+        <div class="filter-container">
+            <select id="filter-select" onchange="filterTickets()">
+                <option value="">Select a participant</option>
+            </select>
         </div>
 
         <div class="table-container">
